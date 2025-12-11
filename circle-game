@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>绕圈小达人</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .pencil-icon {
+            width: 60px;
+            height: 60px;
+            background: #FFD93D;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        h1 {
+            color: #FF6B6B;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .game-container {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .question {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            background: #FFF9C4;
+            padding: 25px;
+            border-radius: 15px;
+            border: 3px solid #FFD93D;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .option-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 22px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .option-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        
+        .option-btn:active {
+            transform: translateY(0);
+        }
+        
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 40px 60px;
+            border-radius: 30px;
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            animation: popIn 0.5s ease;
+        }
+        
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .feedback.correct {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        
+        .feedback.incorrect {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        .star {
+            position: absolute;
+            font-size: 30px;
+            animation: fall 3s linear;
+        }
+        
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .explanation {
+            background: #E8F5E9;
+            border: 3px solid #4CAF50;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 20px;
+            color: #2E7D32;
+            display: none;
+        }
+        
+        .next-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .next-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .progress {
+            text-align: center;
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="pencil-icon">✏️</div>
+        <h1>绕圈小达人</h1>
+    </div>
+    
+    <div class="game-container">
+        <div class="progress">
+            <span id="questionNum">第 1 题</span> / 共 40 题
+        </div>
+        
+        <div class="question" id="questionText">
+            题目加载中...
+        </div>
+        
+        <div class="options" id="optionsContainer">
+            <button class="option-btn" onclick="checkAnswer(0)">选项 A</button>
+            <button class="option-btn" onclick="checkAnswer(1)">选项 B</button>
+            <button class="option-btn" onclick="checkAnswer(2)">选项 C</button>
+        </div>
+        
+        <div class="explanation" id="explanation"></div>
+        
+        <button class="next-btn" onclick="nextQuestion()">下一题</button>
+    </div>
+    
+    <div class="feedback" id="feedback"></div>
+    <div class="celebration" id="celebration"></div>
+    
+    <script>
+        let currentQuestion = 0;
+        let questions = [];
+        
+        const questionTemplates = [
+            {
+                template: "一根绳子绕{a}圈后多出{b}厘米，如果绕{c}圈还差{d}厘米，这根绳子有多长？",
+                params: [
+                    {a: 3, b: 4, c: 4, d: 4, answer: 28},
+                    {a: 4, b: 3, c: 5, d: 2, answer: 23},
+                    {a: 6, b: 5, c: 7, d: 3, answer: 53},
+                    {a: 2, b: 5, c: 3, d: 3, answer: 21},
+                    {a: 5, b: 2, c: 6, d: 4, answer: 34}
+                ]
+            },
+            {
+                template: "一根铁丝绕电线杆{a}圈后余{b}分米，如果绕{c}圈还差{d}分米，这根铁丝长多少分米？",
+                params: [
+                    {a: 4, b: 3, c: 5, d: 2, answer: 23},
+                    {a: 3, b: 2, c: 4, d: 3, answer: 18},
+                    {a: 5, b: 1, c: 6, d: 4, answer: 29},
+                    {a: 2, b: 4, c: 3, d: 2, answer: 16},
+                    {a: 6, b: 3, c: 7, d: 1, answer: 45}
+                ]
+            },
+            {
+                template: "东东有一条彩带，在一根粗细均匀的木棒上绕{a}圈后多出{b}毫米，绕{c}圈则还差{d}毫米，这条彩带长多少毫米？",
+                params: [
+                    {a: 6, b: 20, c: 7, d: 30, answer: 320},
+                    {a: 5, b: 15, c: 6, d: 25, answer: 225},
+                    {a: 4, b: 10, c: 5, d: 20, answer: 140},
+                    {a: 3, b: 25, c: 4, d: 15, answer: 135},
+                    {a: 7, b: 30, c: 8, d: 20, answer: 380}
+                ]
+            }
+        ];
+        
+        function generateQuestions() {
+            questions = [];
+            for (let i = 0; i < 40; i++) {
+                const templateObj = questionTemplates[i % questionTemplates.length];
+                const paramObj = templateObj.params[i % templateObj.params.length];
+                
+                const questionText = templateObj.template
+                    .replace('{a}', paramObj.a)
+                    .replace('{b}', paramObj.b)
+                    .replace('{c}', paramObj.c)
+                    .replace('{d}', paramObj.d);
+                
+                const correctAnswer = paramObj.answer;
+                const wrongAnswers = [
+                    correctAnswer + Math.floor(Math.random() * 10) + 1,
+                    correctAnswer - Math.floor(Math.random() * 10) - 1
+                ];
+                
+                const options = [correctAnswer, wrongAnswers[0], wrongAnswers[1]];
+                options.sort(() => Math.random() - 0.5);
+                
+                const explanation = `绕${paramObj.a}圈多${paramObj.b}，绕${paramObj.c}圈少${paramObj.d}。
+说明绕${paramObj.c - paramObj.a}圈需要${paramObj.b + paramObj.d}。
+所以一圈的长度是${(paramObj.b + paramObj.d) / (paramObj.c - paramObj.a)}。
+绳子的长度是${paramObj.a}圈多${paramObj.b}，即${correctAnswer}。`;
+                
+                questions.push({
+                    text: questionText,
+                    options: options,
+                    correct: correctAnswer,
+                    explanation: explanation
+                });
+            }
+        }
+        
+        function loadQuestion() {
+            const q = questions[currentQuestion];
+            document.getElementById('questionText').textContent = q.text;
+            document.getElementById('questionNum').textContent = `第 ${currentQuestion + 1} 题`;
+            
+            const optionButtons = document.querySelectorAll('.option-btn');
+            optionButtons.forEach((btn, index) => {
+                btn.textContent = `${String.fromCharCode(65 + index)}. ${q.options[index]}`;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+            
+            document.getElementById('explanation').style.display = 'none';
+        }
+        
+        function checkAnswer(selectedIndex) {
+            const q = questions[currentQuestion];
+            const selectedAnswer = q.options[selectedIndex];
+            const feedback = document.getElementById('feedback');
+            
+            const optionButtons = document.querySelectorAll('.option-btn');
+            optionButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+            });
+            
+            if (selectedAnswer === q.correct) {
+                feedback.textContent = '答对了！🎉';
+                feedback.className = 'feedback correct';
+                feedback.style.display = 'block';
+                
+                // 庆祝动画
+                createCelebration();
+                
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 2000);
+            } else {
+                feedback.textContent = '再想想哦 🤔';
+                feedback.className = 'feedback incorrect';
+                feedback.style.display = 'block';
+                
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }
+            
+            // 显示解析
+            document.getElementById('explanation').textContent = q.explanation;
+            document.getElementById('explanation').style.display = 'block';
+        }
+        
+        function createCelebration() {
+            const celebration = document.getElementById('celebration');
+            celebration.innerHTML = '';
+            
+            for (let i = 0; i < 20; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.textContent = ['⭐', '🌟', '✨', '🎉', '🎊'][Math.floor(Math.random() * 5)];
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = -50 + 'px';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                celebration.appendChild(star);
+            }
+            
+            setTimeout(() => {
+                celebration.innerHTML = '';
+            }, 3000);
+        }
+        
+        function nextQuestion() {
+            currentQuestion = (currentQuestion + 1) % questions.length;
+            loadQuestion();
+        }
+        
+        // 初始化游戏
+        generateQuestions();
+        loadQuestion();
+    </script>
+</body>
+</html>
